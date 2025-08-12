@@ -378,7 +378,14 @@ EOF
     # Compile the kernel and modules
     make -j$(nproc)
     mkdir -p /tmp/kernel-modules
-    make modules_install INSTALL_MOD_PATH=/tmp/kernel-modules
+    make modules_install INSTALL_MOD_PATH=/tmp/kernel-modules INSTALL_MOD_STRIP=1
+    
+    find /tmp/kernel-modules -name '*.ko' -exec xz -9 --check=crc32 {} \;
+
+    if [ -f /etc/initramfs-tools/initramfs.conf ]; then
+        sudo sed -i 's/^MODULES=.*/MODULES=dep/' /etc/initramfs-tools/initramfs.conf
+        sudo sed -i 's/^COMPRESS=.*/COMPRESS=xz/' /etc/initramfs-tools/initramfs.conf
+    fi
 
     if [ "$_zfs" == "yes" ]; then
         LINUX_DIR=$(pwd)
